@@ -22,16 +22,37 @@ class Class(object):
     Also is assigned to a ring.
     """
 
-    def __init__(self, id, test, division, ring):
+    def __init__(self, id, level, test, division, ring):
         self.id = id
+        self.level = level
         self.test = test
         self.division = division
         self.ring = ring
         self.maximum_points = 0 # USDF can change this for
         self.time = 0 # the time USDF says it should take
 
+    @classmethod
+    def legacy_load_all(cls, db):
+        return [cls.legacy_from_row(row)
+                for row in db.execute("SELECT * FROM Classes")]
+
+    @classmethod
+    def legacy_from_row(cls, row):
+        id = row[0]
+        if row[1] is not None:
+            level = Level.find_or_create(row[1])
+        else:
+            level = None
+        test = row[2]
+        if row[3] is not None:
+            division = Division.find_or_create(row[3])
+        else:
+            division = None
+        ring = row[7]
+        return cls(id, level, test, division, ring) 
+
     def __str__(self):
-        return "%s level %s"
+        return "%s %s %s %s" % (self.id, self.level, self.test, self.division)
 
     @test
     def definition():
@@ -85,17 +106,31 @@ class Division(object):
      The divisions however are always the same.
     """
 
+    DIVISIONS = {}
+
     def __init__(self, name):
+        if name is None:
+            raise TypeError("Must be string, not None.")
         self.name = name
 
     def __eq__(self, rhs):
         return self.name == rhs.name
 
-Division._12_AND_UNDER = Division("12 and Under")
-Division._13_AND_OVER = Division("13 and Over")
-Division.ADULT = Division("Adult")
-Division.JUNIOR = Division("Junior")
-Division.OPEN_RIDER = Division("Open Rider")
+    @classmethod
+    def find_or_create(cls, name):
+        if name not in cls.DIVISIONS:
+            cls.DIVISIONS[name] = Division(name)
+        return cls.DIVISIONS[name]
+
+    def __str__(self):
+        return self.name
+
+
+# Division._12_AND_UNDER = Division("12 and Under")
+# Division._13_AND_OVER = Division("13 and Over")
+# Division.ADULT = Division("Adult")
+# Division.JUNIOR = Division("Junior")
+# Division.OPEN_RIDER = Division("Open Rider")
 
 
 
@@ -140,32 +175,60 @@ class Entry(object):
 
 class Horse(object):
 
-    def __init__(self, name, breed, sex):
-        self.name = name
-        self.breed = breed
-        self.sex = sex
-        # TODO: More.
+    def __init__(self, name):
+        self.name = name    
+
+    @classmethod
+    def legacy_load_all(cls, db):
+        return [cls.legacy_from_row(row) 
+                for row in db.execute("SELECT * FROM Horses;")]
+
+    @classmethod
+    def legacy_from_row(cls, row):
+        return cls(row[0]) 
+
+    def __str__(self):
+        return self.name
 
 
 class Level(object):
 
-    def __init__(self, name, id_pattern):
+    STUFF = {}
+
+    def __init__(self, name, id_pattern=None):
+        if name is None:
+            raise TypeError("NO!")
         self.name = name
         self.id_pattern = id_pattern
 
     def __eq__(self, other):
         return self.name == other.name
 
+    @classmethod
+    def find_or_create(cls, name):
+        if name not in cls.STUFF:
+            cls.STUFF[name] = Level(name)
+        return cls.STUFF[name]
+
+    # @classmethod
+    # def legacy_load_all(cls, db):
+    #     return [cls.legacy_from_row(row) 
+    #             for row in db.execute("SELECT * FROM Horses;")]
+
+    # @classmethod
+    # def legacy_from_row(cls, row):
+    #     return cls.find_or_create(row[1]) 
+
     def __str__(self):
         return self.name
 
-Level._1ST = Level("1st", "[0-9]+")
-Level._2ND = Level("2nd", "[0-9]+")
-Level._3RD = Level("3rd", "[0-9]+")
-Level._4RTH = Level("4rth", "[0-9]+")
-Level.INTRO = Level("Intro", "[A-Z]+")
-Level.PRIX_ST_GEORGES = Level("Prix St. Georges", "^$")  #empty
-Level.TRAINING = Level("Training", "[0-9]+")
+# Level._1ST = Level("1st", "[0-9]+")
+# Level._2ND = Level("2nd", "[0-9]+")
+# Level._3RD = Level("3rd", "[0-9]+")
+# Level._4RTH = Level("4rth", "[0-9]+")
+# Level.INTRO = Level("Intro", "[A-Z]+")
+# Level.PRIX_ST_GEORGES = Level("Prix St. Georges", "^$")  #empty
+# Level.TRAINING = Level("Training", "[0-9]+")
 
 
 class Id(object):
