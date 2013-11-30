@@ -12,7 +12,7 @@ from blanco import Class, \
 @test
 def class_definition():
     """Establish definition of Class object."""
-    c = Class(6, Test(Level.INTRO, "C"), Division.JUNIOR, Ring.ONE)
+    c = Class(6, Level.INTRO, Test(Level.INTRO, "C"), Division.JUNIOR, Ring.ONE)
     assert_equal(c.id, 6)
     assert_equal(c.test, Test(Level.INTRO, "C"))
     assert_equal(c.division, Division.JUNIOR)
